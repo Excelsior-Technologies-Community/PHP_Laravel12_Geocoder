@@ -1,8 +1,11 @@
-# 🌍 PHP_Laravel12_Geocoder
+# PHP_Laravel12_Geocoder
 
-![Laravel](https://img.shields.io/badge/Laravel-12-red)
-![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)
-![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-Nominatim-green)
+<p align="center">
+<a href="#"><img src="https://img.shields.io/badge/Laravel-12-red" alt="Laravel 12"></a>
+<a href="#"><img src="https://img.shields.io/badge/PHP-8.2+-blue" alt="PHP Version"></a>
+<a href="#"><img src="https://img.shields.io/badge/Geocoder-OpenStreetMap-green" alt="OpenStreetMap"></a>
+<a href="#"><img src="https://img.shields.io/badge/Map-Leaflet.js-brightgreen" alt="Leaflet Map"></a>
+</p>
 
 ---
 
