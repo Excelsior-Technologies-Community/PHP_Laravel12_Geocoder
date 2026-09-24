@@ -9,24 +9,29 @@ use Http\Adapter\Guzzle7\Client as GuzzleAdapter;
 
 class GeocoderService
 {
-    protected $geocoder; // Stores geocoder instance
+    protected $geocoder;
 
     public function __construct()
     {
-        $httpClient = new GuzzleAdapter(); // Create HTTP client adapter
+        $httpClient = new GuzzleAdapter();
 
         $provider = Nominatim::withOpenStreetMapServer(
             $httpClient,
-            'Laravel 12 Geocoder' // Set OpenStreetMap provider with user agent
+            'Laravel 12 Geocoder'
         );
 
-        $this->geocoder = new StatefulGeocoder($provider, 'en'); // Initialize geocoder with language
+        $this->geocoder = new StatefulGeocoder(
+            $provider,
+            'en'
+        );
     }
 
     public function geocode($address)
     {
         return $this->geocoder
-            ->geocodeQuery(GeocodeQuery::create($address)) // Convert address to coordinates
-            ->first(); // Return first result
+            ->geocodeQuery(
+                GeocodeQuery::create($address)
+            )
+            ->first();
     }
 }
