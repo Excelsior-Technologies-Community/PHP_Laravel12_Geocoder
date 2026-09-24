@@ -9,6 +9,11 @@ class Location extends Model
     protected $fillable = [
         'address',
         'latitude',
-        'longitude'
+        'longitude',
+    ];
+
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 }
