@@ -109,6 +109,20 @@
                 </a>
 
                 <a
+                    href="{{ route('location.radius-search') }}"
+                    class="btn btn-info text-white"
+                >
+                    🎯 Radius Search
+                </a>
+
+                <a
+                    href="{{ route('location.route-planner') }}"
+                    class="btn btn-primary"
+                >
+                    🚘 Route Optimizer
+                </a>
+
+                <a
                     href="{{ route('location.distance') }}"
                     class="btn btn-warning"
                 >
@@ -124,7 +138,7 @@
 
                 <a
                     href="{{ route('location.export.json') }}"
-                    class="btn btn-info text-white"
+                    class="btn btn-secondary"
                 >
                     📄 JSON
                 </a>

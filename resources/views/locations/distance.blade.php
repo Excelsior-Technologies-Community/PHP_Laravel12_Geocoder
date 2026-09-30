@@ -67,12 +67,26 @@
 
             </div>
 
-            <a
-                href="{{ route('location.index') }}"
-                class="btn btn-light"
-            >
-                ← Back
-            </a>
+            <div class="d-flex gap-2">
+                <a
+                    href="{{ route('location.index') }}"
+                    class="btn btn-light"
+                >
+                    📍 Geocoder Main
+                </a>
+                <a
+                    href="{{ route('location.radius-search') }}"
+                    class="btn btn-info text-white"
+                >
+                    🎯 Radius Search
+                </a>
+                <a
+                    href="{{ route('location.route-planner') }}"
+                    class="btn btn-success"
+                >
+                    🚘 Route Optimizer
+                </a>
+            </div>
 
         </div>
 

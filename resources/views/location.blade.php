@@ -22,6 +22,16 @@
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     >
 
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    >
+
     <style>
 
         body {
@@ -136,6 +146,20 @@
                 </a>
 
                 <a
+                    href="{{ route('location.radius-search') }}"
+                    class="btn btn-info text-white"
+                >
+                    🎯 Radius Search
+                </a>
+
+                <a
+                    href="{{ route('location.route-planner') }}"
+                    class="btn btn-primary"
+                >
+                    🚘 Route Optimizer
+                </a>
+
+                <a
                     href="{{ route('location.distance') }}"
                     class="btn btn-warning"
                 >
@@ -151,7 +175,7 @@
 
                 <a
                     href="{{ route('location.export.json', request()->query()) }}"
-                    class="btn btn-info text-white"
+                    class="btn btn-secondary"
                 >
                     📄 JSON
                 </a>
@@ -294,11 +318,15 @@
                         <input
                             type="text"
                             name="address"
+                            id="inputAddress"
                             class="form-control"
-                            placeholder="Enter address..."
+                            placeholder="Enter address or click/drag map pin below..."
                             value="{{ old('address') }}"
                             required
                         >
+                        <small class="text-primary mt-1 d-block">
+                            💡 <strong>Live Reverse Geocode:</strong> Click anywhere on the map or drag the <span class="text-danger fw-bold">Red Pin</span> to automatically fill address in real-time!
+                        </small>
 
                     </div>
 
@@ -1004,13 +1032,55 @@
          MAP
     ================================================================= --}}
 
+    {{-- ================================================================
+         MAP STUDIO (CLUSTERS, HEATMAP & REVERSE GEOCODE PIN)
+    ================================================================= --}}
+
     <div class="card main-card">
 
         <div class="card-body p-4">
 
-            <h4 class="mb-3">
-                🗺️ Location Map
-            </h4>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+
+                <div>
+                    <h4 class="mb-1">
+                        🗺️ Live Interactive Map Studio
+                    </h4>
+                    <small class="text-muted">
+                        Drag the <span class="text-danger fw-bold">Red Pin</span> or click map to reverse-geocode addresses.
+                    </small>
+                </div>
+
+                <div class="btn-group" role="group" aria-label="Map View Modes">
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm active"
+                        id="btnModeStandard"
+                        onclick="switchMapMode('standard')"
+                    >
+                        📍 Standard Markers
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        id="btnModeCluster"
+                        onclick="switchMapMode('cluster')"
+                    >
+                        🎯 Marker Cluster
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        id="btnModeHeatmap"
+                        onclick="switchMapMode('heatmap')"
+                    >
+                        🔥 Heatmap Layer
+                    </button>
+                </div>
+
+            </div>
 
             <div id="map"></div>
 
@@ -1022,19 +1092,19 @@
 
 
 {{-- ================================================================
-     LEAFLET
+     LEAFLET PLUGINS (MARKER CLUSTER & HEATMAP)
 ================================================================= --}}
 
-<script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet-heat@0.2.0/dist/leaflet-heat.js"></script>
 
 
 <script>
 
     /*
     |--------------------------------------------------------------------------
-    | Map
+    | Map Setup
     |--------------------------------------------------------------------------
     */
 
@@ -1062,7 +1132,64 @@
 
     const locations = @json($mapLocations);
 
-    const markers = [];
+    let standardLayerGroup = L.layerGroup().addTo(map);
+    let clusterLayerGroup = L.markerClusterGroup();
+    let heatLayerGroup = null;
+
+    const heatPoints = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Red Icon for Draggable Reverse Geocode Pin
+    |--------------------------------------------------------------------------
+    */
+
+    const redIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+
+    const pickerMarker = L.marker([defaultLatitude, defaultLongitude], {
+        icon: redIcon,
+        draggable: true
+    }).addTo(map);
+
+    pickerMarker.bindPopup('<strong>📍 Drag Me!</strong><br>Release anywhere to reverse geocode address.').openPopup();
+
+    pickerMarker.on('dragend', function(e) {
+        const position = pickerMarker.getLatLng();
+        triggerReverseGeocode(position.lat, position.lng);
+    });
+
+    map.on('click', function(e) {
+        pickerMarker.setLatLng(e.latlng);
+        triggerReverseGeocode(e.latlng.lat, e.latlng.lng);
+    });
+
+    function triggerReverseGeocode(lat, lng) {
+        pickerMarker.bindPopup('⌛ Reverse geocoding address...').openPopup();
+
+        fetch(`{{ route('location.reverse-geocode') }}?lat=${lat}&lng=${lng}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.address) {
+                    const inputAddr = document.getElementById('inputAddress');
+                    if (inputAddr) {
+                        inputAddr.value = data.address;
+                        inputAddr.focus();
+                    }
+                    pickerMarker.bindPopup(`<strong>📍 Reverse Geocoded Address:</strong><br>${escapeHtml(data.address)}`).openPopup();
+                    showSuccessToast('Address reverse-geocoded to form input!');
+                }
+            })
+            .catch(err => {
+                pickerMarker.bindPopup(`<strong>📍 Pinned Position:</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
+            });
+    }
 
 
     /*
@@ -1085,100 +1212,80 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Add markers
+    | Populate Saved Markers & Heatmap Data
     |--------------------------------------------------------------------------
     */
 
     locations.forEach(function(location) {
 
-        const latitude =
-            parseFloat(location.latitude);
+        const latitude = parseFloat(location.latitude);
+        const longitude = parseFloat(location.longitude);
 
-        const longitude =
-            parseFloat(location.longitude);
-
-
-        if (
-            Number.isNaN(latitude) ||
-            Number.isNaN(longitude)
-        ) {
+        if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
             return;
         }
 
+        heatPoints.push([latitude, longitude, 0.8]);
 
-        const marker = L.marker([
-            latitude,
-            longitude
-        ]).addTo(map);
+        const marker1 = L.marker([latitude, longitude]);
+        const address = escapeHtml(location.address);
 
-
-        const address =
-            escapeHtml(location.address);
-
-
-        marker.bindPopup(`
+        const popupContent = `
             <div style="min-width:220px">
-
-                <strong>
-                    ${address}
-                </strong>
-
-                <hr>
-
-                <div>
-                    <strong>Latitude:</strong>
-                    ${latitude.toFixed(6)}
-                </div>
-
-                <div>
-                    <strong>Longitude:</strong>
-                    ${longitude.toFixed(6)}
-                </div>
-
-                <br>
-
-                <a
-                    href="/location/${location.id}"
-                    class="btn btn-sm btn-primary"
-                >
-                    View Details
-                </a>
-
-                <a
-                    href="https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}"
-                    target="_blank"
-                    class="btn btn-sm btn-success"
-                >
-                    OSM
-                </a>
-
+                <strong>📍 ${address}</strong><br>
+                <small class="text-muted">Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}</small><br>
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">🗺️ Directions</a>
             </div>
-        `);
+        `;
 
+        marker1.bindPopup(popupContent);
+        standardLayerGroup.addLayer(marker1);
 
-        markers.push(marker);
+        const marker2 = L.marker([latitude, longitude]);
+        marker2.bindPopup(popupContent);
+        clusterLayerGroup.addLayer(marker2);
 
     });
 
+    // Create Heatmap Layer
+    if (heatPoints.length > 0) {
+        heatLayerGroup = L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 });
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | Auto-fit map
+    | Map View Mode Switching
     |--------------------------------------------------------------------------
     */
 
-    if (markers.length > 0) {
+    function switchMapMode(mode) {
+        document.getElementById('btnModeStandard').classList.remove('active');
+        document.getElementById('btnModeCluster').classList.remove('active');
+        document.getElementById('btnModeHeatmap').classList.remove('active');
 
-        const group =
-            L.featureGroup(markers);
+        map.removeLayer(standardLayerGroup);
+        map.removeLayer(clusterLayerGroup);
+        if (heatLayerGroup) {
+            map.removeLayer(heatLayerGroup);
+        }
 
-        map.fitBounds(
-            group.getBounds().pad(0.15),
-            {
-                maxZoom: 15
+        if (mode === 'standard') {
+            document.getElementById('btnModeStandard').classList.add('active');
+            map.addLayer(standardLayerGroup);
+        } else if (mode === 'cluster') {
+            document.getElementById('btnModeCluster').classList.add('active');
+            map.addLayer(clusterLayerGroup);
+        } else if (mode === 'heatmap') {
+            document.getElementById('btnModeHeatmap').classList.add('active');
+            if (heatLayerGroup) {
+                map.addLayer(heatLayerGroup);
             }
-        );
+        }
+    }
 
+    if (heatPoints.length > 0) {
+        const bounds = L.latLngBounds(heatPoints.map(p => [p[0], p[1]]));
+        map.fitBounds(bounds, { padding: [50, 50] });
     }
 
 
