@@ -65,6 +65,48 @@ Route::post('/location/bulk-delete', [
 ])->name('location.bulk-delete');
 
 
+// Reverse Geocoding API endpoint
+Route::get('/location/reverse-geocode', [
+    LocationController::class,
+    'reverseGeocode'
+])->name('location.reverse-geocode');
+
+
+// Radius Search Studio
+Route::get('/location/radius-search', [
+    LocationController::class,
+    'radiusSearch'
+])->name('location.radius-search');
+
+
+// Multi-stop Route Planner
+Route::get('/location/route-planner', [
+    LocationController::class,
+    'routePlanner'
+])->name('location.route-planner');
+
+
+// Calculate Multi-stop Route
+Route::post('/location/calculate-route', [
+    LocationController::class,
+    'calculateRoute'
+])->name('location.calculate-route');
+
+
+// Export Route as GPX
+Route::post('/location/export-gpx', [
+    LocationController::class,
+    'exportGpx'
+])->name('location.export-gpx');
+
+
+// Export Route as KML
+Route::post('/location/export-kml', [
+    LocationController::class,
+    'exportKml'
+])->name('location.export-kml');
+
+
 // Edit location
 Route::get('/location/{location}/edit', [
     LocationController::class,
